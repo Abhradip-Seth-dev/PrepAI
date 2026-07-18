@@ -4,11 +4,106 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
 
+enum UserRole {
+  CANDIDATE
+  ADMIN
+}
+
+enum InterviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  DESCRIPTIVE
+  CODING
+}
+
+enum InterviewStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id        String             @id @default(uuid())
+  name      String
+  email     String             @unique
+  password  String
+  avatar    String?
+  role      UserRole           @default(CANDIDATE)
+  attempts  InterviewAttempt[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model Interview {
+  id          String              @id @default(uuid())
+  title       String
+  description String?
+  difficulty  InterviewDifficulty @default(MEDIUM)
+  duration    Int
+  questions   Question[]
+  attempts    InterviewAttempt[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model Question {
+  id          String       @id @default(uuid())
+  question    String
+  type        QuestionType @default(MULTIPLE_CHOICE)
+  order       Int
+  interviewId String
+  interview   Interview    @relation(fields: [interviewId], references: [id])
+  answers     Answer[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model InterviewAttempt {
+  id          String          @id @default(uuid())
+  status      InterviewStatus @default(PENDING)
+  startedAt   DateTime?
+  completedAt DateTime?
+  totalScore  Int?
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  interviewId String
+  interview   Interview       @relation(fields: [interviewId], references: [id])
+  answers     Answer[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Answer {
+  id          String           @id @default(uuid())
+  content     String
+  submittedAt DateTime?
+  attemptId   String
+  attempt     InterviewAttempt @relation(fields: [attemptId], references: [id])
+  questionId  String
+  question    Question         @relation(fields: [questionId], references: [id])
+  feedback    Feedback?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  score     Int
+  content   String
+  answerId  String   @unique
+  answer    Answer   @relation(fields: [answerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
